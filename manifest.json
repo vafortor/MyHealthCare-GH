@@ -1,0 +1,24 @@
+
+{
+  "name": "MyHealthCare-GH: Patient Navigator",
+  "short_name": "MyHealthCare",
+  "description": "Patient Navigation and Triage AI Agent",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063176.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063176.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

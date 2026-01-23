@@ -1,0 +1,8 @@
+{
+  "name": "MyHealthCare-GH",
+  "description": "A high-performance Patient Navigation AI Agent that performs symptom triage, provides routing recommendations, and searches for local healthcare providers while prioritizing safety and privacy.",
+  "requestFramePermissions": [
+    "geolocation",
+    "microphone"
+  ]
+}

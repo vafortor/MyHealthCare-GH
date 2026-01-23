@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MyHealthCare-GH - Patient Navigation</title>
+    
+    <!-- PWA / Home Screen Installation Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MyHealthCare">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063176.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0"
+  }
+}
+</script>
+<style>
+    /* Prevent text selection and pull-to-refresh for a more native feel */
+    body {
+        overscroll-behavior-y: contain;
+        -webkit-tap-highlight-color: transparent;
+    }
+    /* Simple fade-in for the root element */
+    #root {
+        animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+    <div id="root"></div>
+</body>
+</html>
