@@ -465,7 +465,7 @@ const App: React.FC = () => {
   const totalAmount = selectedAmount === 'other' ? (customAmount || '0') : selectedAmount;
 
   return (
-    <div className="flex flex-col h-screen max-w-5xl mx-auto bg-white shadow-2xl relative">
+    <div className="flex flex-col h-screen max-w-6xl mx-auto bg-white shadow-2xl relative">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
@@ -549,47 +549,47 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-6 flex flex-col md:flex-row gap-6">
-        {/* Left Column: Chat Interface */}
-        <div className="flex-1 flex flex-col h-full bg-slate-50 rounded-xl border border-slate-200 overflow-hidden min-h-[400px]">
+      {/* Main Content Area - Proportional Adjustments for Larger Chat */}
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 flex flex-col md:flex-row gap-6">
+        {/* Left Column: Chat Interface - flex-2 for more width */}
+        <div className="flex-[2] flex flex-col h-full bg-slate-50 rounded-xl border border-slate-200 overflow-hidden min-h-[500px] shadow-sm">
           {/* Mode Switcher */}
           <div className="flex border-b border-slate-200 bg-white">
             <button 
               onClick={() => setMode('triage')}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all ${mode === 'triage' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 py-3.5 text-xs font-bold uppercase tracking-wider transition-all ${mode === 'triage' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <i className="fa-solid fa-stethoscope mr-2"></i>
               Symptom Triage
             </button>
             <button 
               onClick={() => setMode('support')}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all ${mode === 'support' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 py-3.5 text-xs font-bold uppercase tracking-wider transition-all ${mode === 'support' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <i className="fa-solid fa-headset mr-2"></i>
               App Support
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 italic text-center p-8">
-                <i className={`fa-solid ${mode === 'triage' ? 'fa-heart-pulse' : 'fa-circle-question'} text-4xl mb-4 opacity-10`}></i>
-                <p className="text-sm">
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 italic text-center p-8 max-w-md mx-auto">
+                <i className={`fa-solid ${mode === 'triage' ? 'fa-heart-pulse' : 'fa-circle-question'} text-5xl mb-6 opacity-10`}></i>
+                <p className="text-sm leading-relaxed font-medium">
                   {mode === 'triage' 
-                    ? "Start by describing your symptoms. I'll ask a few questions to help navigate you to the right care." 
-                    : "Ask me anything about MyHealthCare-GH, support features, or technical help."}
+                    ? "Start by describing your symptoms in detail. I'll ask a few targeted questions to help navigate you to the right care setting." 
+                    : "Ask me anything about MyHealthCare-GH platform, contribution options, or how to get support."}
                 </p>
               </div>
             )}
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-4 rounded-2xl relative ${
+                <div className={`max-w-[85%] p-4 md:p-5 rounded-2xl relative shadow-sm border ${
                   m.role === 'user' 
-                  ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
-                  : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none shadow-sm'
+                  ? 'bg-blue-600 text-white rounded-tr-none border-blue-700' 
+                  : 'bg-white border-slate-200 text-slate-800 rounded-tl-none'
                 }`}>
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.text}</p>
+                  <p className="text-sm md:text-base whitespace-pre-wrap leading-relaxed font-medium">{m.text}</p>
                   
                   {m.role === 'model' && (
                     <button 
@@ -602,7 +602,7 @@ const App: React.FC = () => {
                     </button>
                   )}
 
-                  <span className={`text-[10px] mt-2 block ${m.role === 'user' ? 'text-blue-100' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] mt-2 block opacity-70 ${m.role === 'user' ? 'text-blue-100 text-right' : 'text-slate-400'}`}>
                     {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -610,25 +610,25 @@ const App: React.FC = () => {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white border border-slate-200 p-4 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce"></div>
-                  <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:-.3s]"></div>
-                  <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:-.5s]"></div>
+                <div className="bg-white border border-slate-200 p-4 rounded-2xl rounded-tl-none shadow-sm flex gap-1.5 items-center">
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-.3s]"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-.5s]"></div>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input */}
-          <div className="p-4 bg-white border-t border-slate-200">
-              <div className="flex gap-2 items-center">
+          {/* Chat Input - Comfortable and Spacious */}
+          <div className="p-4 md:p-6 bg-white border-t border-slate-200">
+              <div className="flex gap-3 items-center max-w-4xl mx-auto">
                 <button 
                   onClick={handleListen}
-                  className={`p-2 rounded-full transition-all ${isListening ? 'bg-red-100 text-red-600 animate-pulse scale-110 shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                  className={`w-11 h-11 flex items-center justify-center rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                   title={isListening ? "Stop listening" : "Voice input"}
                 >
-                  <i className={`fa-solid ${isListening ? 'fa-microphone-slash' : 'fa-microphone'}`}></i>
+                  <i className={`fa-solid ${isListening ? 'fa-microphone-slash' : 'fa-microphone'} text-lg`}></i>
                 </button>
                 
                 <input
@@ -636,14 +636,14 @@ const App: React.FC = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder={isListening ? "Listening..." : mode === 'triage' ? "Describe your symptoms..." : "Ask a question..."}
-                  className={`flex-1 border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:outline-none transition-all ${mode === 'triage' ? 'border-slate-300 focus:ring-blue-500' : 'border-indigo-200 focus:ring-indigo-500'}`}
+                  placeholder={isListening ? "Listening..." : mode === 'triage' ? "Describe your symptoms (e.g. 'I have a headache and fatigue')..." : "Ask a platform question..."}
+                  className={`flex-1 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm md:text-base focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:outline-none transition-all`}
                 />
                 
                 <button 
                   onClick={handleSend}
                   disabled={loading || !input.trim()}
-                  className={`${mode === 'triage' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-6 py-2 rounded-lg font-medium transition disabled:opacity-50`}
+                  className={`w-11 h-11 flex items-center justify-center rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 ${mode === 'triage' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
                 >
                   <i className="fa-solid fa-paper-plane"></i>
                 </button>
@@ -651,17 +651,17 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Results & Providers */}
-        <aside className={`w-full md:w-80 lg:w-96 flex flex-col gap-4 overflow-y-auto`}>
+        {/* Right Column: Results & Providers - flex-1 for secondary focal point */}
+        <aside className={`flex-1 md:max-w-sm flex flex-col gap-4 overflow-y-auto`}>
            {/* Saved Providers Overlay View */}
            {showSaved && (
-             <div className="bg-amber-50 rounded-xl border border-amber-200 shadow-sm p-4 mb-4">
+             <div className="bg-amber-50 rounded-xl border border-amber-200 shadow-sm p-4 mb-2 animate-in fade-in duration-200">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-amber-800 flex items-center gap-2">
                     <i className="fa-solid fa-star"></i>
                     Saved Providers
                   </h3>
-                  <button onClick={() => setShowSaved(false)} className="text-amber-800 hover:text-amber-900">
+                  <button onClick={() => setShowSaved(false)} className="text-amber-800 hover:bg-amber-100 w-8 h-8 rounded-lg flex items-center justify-center transition">
                     <i className="fa-solid fa-xmark"></i>
                   </button>
                 </div>
@@ -688,19 +688,19 @@ const App: React.FC = () => {
                     triageResult.level === TriageLevel.URGENT ? 'fa-clock' :
                     triageResult.level === TriageLevel.ROUTINE ? 'fa-calendar-check' : 'fa-house'
                   }`}></i>
-                  <h2 className="font-bold uppercase tracking-wider text-sm">Triage: {triageResult.level}</h2>
+                  <h2 className="font-bold uppercase tracking-wider text-xs">Triage: {triageResult.level}</h2>
                 </div>
                 <div className="p-4">
                   <div className="mb-4">
-                    <label className="text-[10px] uppercase font-bold text-slate-400">Recommended Specialty</label>
-                    <p className="font-semibold text-slate-800">{triageResult.specialtyNeeded || 'General Practice'}</p>
+                    <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Recommended Specialty</label>
+                    <p className="font-bold text-slate-800">{triageResult.specialtyNeeded || 'General Practice'}</p>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                     <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Referral Summary</label>
+                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                     <label className="text-[10px] uppercase font-bold text-slate-400 block mb-2 tracking-wider">Referral Summary</label>
                      <p className="text-xs text-slate-700 italic leading-relaxed">"{triageResult.summary}"</p>
                      <button 
                        onClick={() => navigator.clipboard.writeText(triageResult.summary)}
-                       className="mt-2 text-[10px] text-blue-600 hover:underline flex items-center gap-1"
+                       className="mt-3 w-full bg-white border border-slate-200 text-blue-600 py-2 rounded-lg text-xs font-bold hover:bg-blue-50 transition-all flex items-center justify-center gap-2 shadow-sm"
                      >
                        <i className="fa-regular fa-copy"></i> Copy to clipboard
                      </button>
@@ -709,28 +709,27 @@ const App: React.FC = () => {
              </div>
            )}
 
-           {/* Value-Based Subscription/Donation Invitation (Relief/Clarity delivered) */}
+           {/* Value-Based Subscription/Donation Invitation */}
            {triageResult && !isSubscribed && !showSaved && (
-             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-5 text-white shadow-xl animate-in zoom-in-95 duration-500 relative overflow-hidden">
-                <i className="fa-solid fa-gem absolute -right-2 -bottom-2 text-6xl opacity-10 rotate-12"></i>
+             <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-xl p-5 text-white shadow-xl animate-in zoom-in-95 duration-500 relative overflow-hidden group">
+                <i className="fa-solid fa-gem absolute -right-2 -bottom-2 text-6xl opacity-10 rotate-12 transition-transform group-hover:scale-110"></i>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                  <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm border border-white/20">
                     <i className="fa-solid fa-crown text-amber-300 text-lg animate-pulse"></i>
                   </div>
-                  <h3 className="font-bold text-base">Support Our Community 🇬🇭</h3>
+                  <h3 className="font-bold text-sm uppercase tracking-wider">Support Our Mission 🇬🇭</h3>
                 </div>
                 
                 <p className="text-xs opacity-90 mb-4 leading-relaxed">
-                  Now that you have clarity, help keep this service free for everyone. 
-                  Choose a support level or donate to the mission.
+                  We are a community-focused mission. Help keep this platform free for all Ghanaians by choosing a support level.
                 </p>
 
                 {!showSubscriptionForm ? (
                   <button 
                     onClick={() => setShowSubscriptionForm(true)}
-                    className="relative z-10 block w-full bg-white text-blue-700 text-center py-2.5 rounded-lg text-xs font-bold hover:bg-blue-50 transition-all shadow-lg hover:scale-[1.02] active:scale-95"
+                    className="relative z-10 block w-full bg-white text-blue-700 text-center py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-blue-50 transition-all shadow-lg active:scale-95"
                   >
-                    Subscribe or Donate Now
+                    Subscribe or Donate
                   </button>
                 ) : (
                   <form onSubmit={handleSubscribe} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 relative z-10">
@@ -821,12 +820,12 @@ const App: React.FC = () => {
                       className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-3 rounded-lg text-xs transition shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {isSubscribing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-bolt"></i>}
-                      {isSubscribing ? 'Processing...' : `Pay Ghc${totalAmount} with MoMo`}
+                      {isSubscribing ? 'Processing...' : `Pay Ghc${totalAmount} via MoMo`}
                     </button>
                     <button 
                       type="button"
                       onClick={() => setShowSubscriptionForm(false)}
-                      className="w-full text-[10px] text-white/70 hover:text-white underline"
+                      className="w-full text-[10px] text-white/70 hover:text-white underline font-bold"
                     >
                       Maybe Later
                     </button>
@@ -836,12 +835,14 @@ const App: React.FC = () => {
            )}
 
            {isSubscribed && triageResult && (
-             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 animate-in fade-in duration-500">
+             <div className="bg-emerald-50 border-2 border-emerald-100 rounded-xl p-4 animate-in fade-in duration-500 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <i className="fa-solid fa-star text-amber-500"></i>
+                  <div className="bg-emerald-500 p-2 rounded-lg text-white">
+                      <i className="fa-solid fa-star"></i>
+                  </div>
                   <div>
-                    <h4 className="text-xs font-bold text-emerald-800">Supportive Member: {subForm.fullName}</h4>
-                    <p className="text-[10px] text-emerald-600">You're helping us reach more patients across Ghana. Thank you!</p>
+                    <h4 className="text-xs font-bold text-emerald-800">Supportive Member</h4>
+                    <p className="text-[10px] text-emerald-600 font-medium">Thank you, {subForm.fullName.split(' ')[0]}, for your contribution!</p>
                   </div>
                 </div>
              </div>
@@ -849,41 +850,42 @@ const App: React.FC = () => {
 
            {/* Provider Search Card */}
            {triageResult && triageResult.level !== TriageLevel.EMERGENCY && triageResult.level !== TriageLevel.SELF_CARE && !showSaved && (
-             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 animate-in fade-in slide-in-from-bottom-4">
-                <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-wider text-xs">
                   <i className="fa-solid fa-magnifying-glass-location text-blue-600"></i>
-                  Find a Provider
+                  Find Local Care
                 </h3>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-3">
                     <input 
                       type="text" 
-                      placeholder="Location/ZIP" 
+                      placeholder="Area or Zip Code (e.g. Kumasi, Accra)" 
                       value={zipCode}
                       onChange={(e) => setZipCode(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full border-2 border-slate-50 rounded-lg px-3 py-2.5 text-sm focus:ring-0 focus:border-blue-500 outline-none transition-all"
                     />
                     <input 
                       type="text" 
-                      placeholder="Insurance" 
+                      placeholder="Insurance Provider (Optional)" 
                       value={insurance}
                       onChange={(e) => setInsurance(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full border-2 border-slate-50 rounded-lg px-3 py-2.5 text-sm focus:ring-0 focus:border-blue-500 outline-none transition-all"
                     />
                   </div>
                   <button 
                     onClick={handleProviderSearch}
                     disabled={loading || !zipCode}
-                    className="w-full bg-slate-800 hover:bg-slate-900 text-white text-sm py-2 rounded-lg transition disabled:opacity-50"
+                    className="w-full bg-slate-900 hover:bg-black text-white text-xs font-bold py-3 rounded-lg transition shadow-md disabled:opacity-50 uppercase tracking-widest"
                   >
-                    Search {triageResult.specialtyNeeded}
+                    Search {triageResult.specialtyNeeded || 'Providers'}
                   </button>
                 </div>
 
                 {providers.length > 0 && (
-                  <div className="mt-6 space-y-4">
+                  <div className="mt-8 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide">Top Recommendations</h4>
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Verified Near You</h4>
+                      <span className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold">{providers.length} Results</span>
                     </div>
                     {providers.map((p, idx) => renderProviderCard(p, idx))}
                   </div>
@@ -893,45 +895,46 @@ const App: React.FC = () => {
 
            {/* Emergency Notice */}
            {isEmergencyEscalated && (
-             <div className="bg-red-50 border-2 border-red-600 rounded-xl p-5 text-red-900 animate-pulse shadow-lg">
-                <div className="flex items-center gap-3 mb-3">
-                  <i className="fa-solid fa-circle-exclamation text-2xl text-red-600"></i>
-                  <h3 className="font-black uppercase">IMMEDIATE ACTION</h3>
+             <div className="bg-red-50 border-4 border-red-600 rounded-xl p-6 text-red-900 animate-pulse shadow-2xl">
+                <div className="flex items-center gap-4 mb-4">
+                  <i className="fa-solid fa-circle-exclamation text-3xl text-red-600"></i>
+                  <h3 className="font-black uppercase text-lg">IMMEDIATE ACTION</h3>
                 </div>
-                <p className="text-sm font-bold mb-4">You indicated symptoms that require immediate medical intervention.</p>
+                <p className="text-sm font-bold mb-5 leading-relaxed">Your symptoms require immediate medical intervention. Do not wait.</p>
                 <div className="space-y-3">
-                  <a href="tel:112" className="block w-full text-center bg-red-600 text-white py-3 rounded-lg font-black text-lg shadow-md hover:bg-red-700 transition">CALL 112</a>
-                  <p className="text-[10px] text-center text-red-700 font-bold">Alternative: Call 999</p>
+                  <a href="tel:112" className="block w-full text-center bg-red-600 text-white py-4 rounded-xl font-black text-xl shadow-lg hover:bg-red-700 transition active:scale-95">CALL 112 NOW</a>
+                  <p className="text-xs text-center text-red-700 font-bold uppercase tracking-widest mt-2">Alternative: Call 999</p>
                 </div>
              </div>
            )}
            
            {!triageResult && !showSaved && mode === 'triage' && (
-             <div className="bg-slate-50 rounded-xl border border-slate-200 border-dashed p-12 flex flex-col items-center justify-center text-slate-400 text-center">
-                <i className="fa-solid fa-clipboard-list text-3xl mb-4 opacity-20"></i>
-                <p className="text-xs italic leading-relaxed">Triage results and local provider matches will be displayed here once your assessment is complete.</p>
+             <div className="bg-slate-50 rounded-xl border border-slate-200 border-dashed p-16 flex flex-col items-center justify-center text-slate-400 text-center shadow-inner">
+                <i className="fa-solid fa-clipboard-list text-4xl mb-4 opacity-10"></i>
+                <p className="text-xs font-bold italic leading-relaxed max-w-[180px]">Your matched healthcare providers and triage summary will appear here.</p>
              </div>
            )}
 
            {mode === 'support' && !showSaved && (
-             <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-6 flex flex-col items-center justify-center text-indigo-400 text-center">
-                <i className="fa-solid fa-headset text-3xl mb-4 opacity-20"></i>
-                <h4 className="font-bold text-indigo-700 text-xs mb-2">Platform Assistance</h4>
-                <p className="text-[10px] italic leading-relaxed">Ask about support options, privacy, or how your donation keeps the app free for everyone.</p>
+             <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-8 flex flex-col items-center justify-center text-indigo-400 text-center shadow-inner">
+                <i className="fa-solid fa-headset text-4xl mb-6 opacity-10"></i>
+                <h4 className="font-bold text-indigo-700 text-xs mb-3 uppercase tracking-widest">How can we help?</h4>
+                <p className="text-[10px] italic leading-relaxed font-medium">Ask questions about data privacy, how to support us, or platform features.</p>
              </div>
            )}
         </aside>
       </main>
 
       {/* Persistent Safety Banner */}
-      <footer className="bg-slate-900 text-slate-400 py-2 px-4 text-[10px] flex justify-between items-center shrink-0">
-         <div className="flex gap-4">
+      <footer className="bg-slate-900 text-slate-400 py-3 px-6 text-[10px] flex justify-between items-center shrink-0 border-t border-slate-800">
+         <div className="flex gap-6 font-medium uppercase tracking-widest opacity-60">
            <span>&copy; MyHealthCare-GH 2026</span>
-           <span>Standard Compliance Ready</span>
+           <span>Created by Ghit Solutions 2025</span>
+           <span className="hidden sm:inline">Standard Health Compliance</span>
          </div>
-         <div className="flex items-center gap-1">
+         <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
            <i className="fa-solid fa-shield-halved text-emerald-500"></i>
-           <span>Secure Health Data</span>
+           <span className="font-bold uppercase tracking-widest">Secure & Confidential</span>
          </div>
       </footer>
     </div>
