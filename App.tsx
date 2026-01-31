@@ -22,6 +22,11 @@ const LANGUAGES = [
 const MOMO_NUMBER = "+233248279518";
 const PREMIUM_PRICE = 25;
 const DONATION_PRESETS = [100, 200, 400];
+const BANK_DETAILS = {
+  name: "GHIT LTD",
+  routing: "130103",
+  account: "1441004555030"
+};
 
 // Helper functions for audio processing
 function decode(base64: string) {
@@ -68,10 +73,13 @@ const App: React.FC = () => {
   const [isEmergencyEscalated, setIsEmergencyEscalated] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const [showSubscriptionForm, setShowSubscriptionForm] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'momo' | 'bank'>('momo');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [mode, setMode] = useState<ChatMode>('triage');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   
   // Subscription States
   const [subForm, setSubForm] = useState<Subscription>({ fullName: '', email: '', momoNumber: '' });
@@ -82,6 +90,7 @@ const App: React.FC = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -106,6 +115,9 @@ const App: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
         setShowLangMenu(false);
+      }
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target as Node)) {
+        setShowShareMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -194,6 +206,7 @@ const App: React.FC = () => {
     setIsListening(false);
     setShowSubscriptionForm(false);
     setMode('triage');
+    setCopiedId(null);
     
     if (recognitionRef.current) recognitionRef.current.stop();
     if (audioContextRef.current) {
@@ -205,16 +218,41 @@ const App: React.FC = () => {
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subForm.fullName || !subForm.email || !subForm.momoNumber) return;
+    if (!subForm.fullName || !subForm.email || (paymentMethod === 'momo' && !subForm.momoNumber)) return;
     
     setIsSubscribing(true);
-    // Simulate payment trigger / API call
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     setIsSubscribed(true);
     setIsSubscribing(false);
     localStorage.setItem('navicare_subscription', JSON.stringify(subForm));
     setShowSubscriptionForm(false);
+  };
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: 'MyHealthCare-GH: Patient Navigator',
+      text: 'Check out MyHealthCare-GH. It helps triage medical symptoms and find local doctors in Ghana.',
+      url: window.location.origin,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Error sharing', err);
+        setShowShareMenu(true);
+      }
+    } else {
+      setShowShareMenu(!showShareMenu);
+    }
   };
 
   const playVoice = async (text: string) => {
@@ -304,7 +342,6 @@ const App: React.FC = () => {
           setMessages(prev => [...prev, assistantMessage]);
         }
       } else {
-        // Support mode
         const supportResponse = await processSupport(history, language);
         const assistantMessage: Message = {
           role: 'model',
@@ -404,8 +441,7 @@ const App: React.FC = () => {
           </div>
 
           <p className="text-slate-600 mb-6 text-center text-sm leading-relaxed border-t pt-4">
-            MyHealthCare-GH helps you assess symptoms and navigate to the right medical setting. 
-            We are dedicated to improving healthcare accessibility across Ghana.
+            Please note that I am an automated assistant and not a doctor. The information I provide is for educational purposes and should not replace professional medical advice, diagnosis, or treatment. <strong>If you are experiencing a life-threatening emergency, please stop and call your local emergency services immediately.</strong>
           </p>
           
           <button 
@@ -419,50 +455,64 @@ const App: React.FC = () => {
     );
   }
 
-  const renderProviderCard = (p: Provider, idx: number) => (
-    <div key={idx} className="group border border-slate-100 rounded-xl p-4 bg-white hover:border-blue-200 hover:shadow-md transition">
-      <div className="flex justify-between items-start mb-2">
-        <h5 className="font-bold text-slate-800 text-sm">{p.name}</h5>
-        <button 
-          onClick={() => toggleSaveProvider(p)}
-          className={`p-1 rounded-full transition ${isProviderSaved(p) ? 'text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-500 bg-slate-50'}`}
-        >
-          <i className={`fa-${isProviderSaved(p) ? 'solid' : 'regular'} fa-star`}></i>
-        </button>
-      </div>
-      
-      <p className="text-[11px] text-slate-500 mb-2 flex items-start gap-1">
-        <i className="fa-solid fa-location-dot mt-0.5 text-slate-400"></i>
-        {p.address}
-      </p>
-      
-      <div className="flex flex-col gap-2 pt-2 border-t border-slate-50">
-        <div className="flex items-center justify-between">
-           <a href={`tel:${p.phone}`} className="text-[11px] text-blue-600 font-bold flex items-center gap-1 hover:underline">
-             <i className="fa-solid fa-phone"></i> {p.phone}
-           </a>
-           {p.verified && (
-             <span className="text-[9px] flex items-center gap-0.5 text-emerald-600 font-bold">
-               <i className="fa-solid fa-circle-check"></i> VERIFIED
-             </span>
-           )}
+  const renderProviderCard = (p: Provider, idx: number) => {
+    const cardId = `provider-${idx}`;
+    return (
+      <div key={idx} className="group border border-slate-100 rounded-xl p-4 bg-white hover:border-blue-200 hover:shadow-md transition">
+        <div className="flex justify-between items-start mb-2">
+          <h5 className="font-bold text-slate-800 text-sm">{p.name}</h5>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => copyToClipboard(`${p.name}\n${p.address}\n${p.phone}`, cardId)}
+              className={`p-1 rounded-md transition text-xs ${copiedId === cardId ? 'text-emerald-500 bg-emerald-50' : 'text-slate-400 hover:text-blue-500 bg-slate-50'}`}
+              title="Copy details"
+            >
+              <i className={`fa-solid ${copiedId === cardId ? 'fa-check' : 'fa-copy'}`}></i>
+            </button>
+            <button 
+              onClick={() => toggleSaveProvider(p)}
+              className={`p-1 rounded-full transition ${isProviderSaved(p) ? 'text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-500 bg-slate-50'}`}
+            >
+              <i className={`fa-${isProviderSaved(p) ? 'solid' : 'regular'} fa-star`}></i>
+            </button>
+          </div>
         </div>
         
-        {p.bookingUrl && (
-          <a 
-            href={p.bookingUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="w-full bg-blue-50 text-blue-700 text-center py-2 rounded-lg text-xs font-bold hover:bg-blue-100 transition mt-1"
-          >
-            Book Appointment
-          </a>
-        )}
+        <p className="text-[11px] text-slate-500 mb-2 flex items-start gap-1">
+          <i className="fa-solid fa-location-dot mt-0.5 text-slate-400"></i>
+          {p.address}
+        </p>
+        
+        <div className="flex flex-col gap-2 pt-2 border-t border-slate-50">
+          <div className="flex items-center justify-between">
+             <a href={`tel:${p.phone}`} className="text-[11px] text-blue-600 font-bold flex items-center gap-1 hover:underline">
+               <i className="fa-solid fa-phone"></i> {p.phone}
+             </a>
+             {p.verified && (
+               <span className="text-[9px] flex items-center gap-0.5 text-emerald-600 font-bold">
+                 <i className="fa-solid fa-circle-check"></i> VERIFIED
+               </span>
+             )}
+          </div>
+          
+          {p.bookingUrl && (
+            <a 
+              href={p.bookingUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="w-full bg-blue-50 text-blue-700 text-center py-2 rounded-lg text-xs font-bold hover:bg-blue-100 transition mt-1"
+            >
+              Book Appointment
+            </a>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const totalAmount = selectedAmount === 'other' ? (customAmount || '0') : selectedAmount;
+  const appLink = window.location.origin;
+  const shareText = "Check out MyHealthCare-GH. It helps triage medical symptoms and find local doctors in Ghana.";
 
   return (
     <div className="flex flex-col h-screen max-w-6xl mx-auto bg-white shadow-2xl relative">
@@ -531,6 +581,34 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
+            
+            <div className="relative" ref={shareMenuRef}>
+              <button 
+                onClick={handleShare}
+                className={`p-2 rounded-lg transition ${showShareMenu ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                title="Share App"
+              >
+                <i className="fa-solid fa-share-nodes"></i>
+              </button>
+              {showShareMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-2xl z-20 py-2 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                   <h4 className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50 mb-1">Share via</h4>
+                   <a href={`https://wa.me/?text=${encodeURIComponent(shareText + " " + appLink)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2.5 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">
+                     <i className="fa-brands fa-whatsapp text-emerald-500 text-sm"></i> WhatsApp
+                   </a>
+                   <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appLink)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2.5 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition">
+                     <i className="fa-brands fa-facebook text-blue-600 text-sm"></i> Facebook
+                   </a>
+                   <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(appLink)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-black transition">
+                     <i className="fa-brands fa-x-twitter text-slate-900 text-sm"></i> X (Twitter)
+                   </a>
+                   <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(appLink)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2.5 text-xs text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition">
+                     <i className="fa-brands fa-linkedin text-indigo-600 text-sm"></i> LinkedIn
+                   </a>
+                </div>
+              )}
+            </div>
+
             <button 
               onClick={() => setShowSaved(!showSaved)}
               className={`p-2 rounded-lg transition ${showSaved ? 'bg-amber-100 text-amber-600' : 'text-slate-400 hover:text-slate-600'}`}
@@ -549,9 +627,9 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content Area - Proportional Adjustments for Larger Chat */}
+      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 flex flex-col md:flex-row gap-6">
-        {/* Left Column: Chat Interface - flex-2 for more width */}
+        {/* Left Column: Chat Interface */}
         <div className="flex-[2] flex flex-col h-full bg-slate-50 rounded-xl border border-slate-200 overflow-hidden min-h-[500px] shadow-sm">
           {/* Mode Switcher */}
           <div className="flex border-b border-slate-200 bg-white">
@@ -582,32 +660,42 @@ const App: React.FC = () => {
                 </p>
               </div>
             )}
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-4 md:p-5 rounded-2xl relative shadow-sm border ${
-                  m.role === 'user' 
-                  ? 'bg-blue-600 text-white rounded-tr-none border-blue-700' 
-                  : 'bg-white border-slate-200 text-slate-800 rounded-tl-none'
-                }`}>
-                  <p className="text-sm md:text-base whitespace-pre-wrap leading-relaxed font-medium">{m.text}</p>
-                  
-                  {m.role === 'model' && (
-                    <button 
-                      onClick={() => playVoice(m.text)}
-                      disabled={isSpeaking}
-                      className={`absolute -right-8 bottom-2 text-slate-400 hover:text-blue-500 transition-colors ${isSpeaking ? 'animate-pulse text-blue-500' : ''}`}
-                      title="Read aloud"
-                    >
-                      <i className={`fa-solid ${isSpeaking ? 'fa-volume-high' : 'fa-volume-low'}`}></i>
-                    </button>
-                  )}
+            {messages.map((m, i) => {
+              const msgId = `msg-${i}`;
+              return (
+                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-4 md:p-5 rounded-2xl relative shadow-sm border ${
+                    m.role === 'user' 
+                    ? 'bg-blue-600 text-white rounded-tr-none border-blue-700' 
+                    : 'bg-white border-slate-200 text-slate-800 rounded-tl-none'
+                  }`}>
+                    <p className="text-sm md:text-base whitespace-pre-wrap leading-relaxed font-medium">{m.text}</p>
+                    
+                    <div className={`absolute -right-8 bottom-2 flex flex-col gap-2 ${m.role === 'user' ? 'hidden' : ''}`}>
+                      <button 
+                        onClick={() => playVoice(m.text)}
+                        disabled={isSpeaking}
+                        className={`text-slate-400 hover:text-blue-500 transition-colors ${isSpeaking ? 'animate-pulse text-blue-500' : ''}`}
+                        title="Read aloud"
+                      >
+                        <i className={`fa-solid ${isSpeaking ? 'fa-volume-high' : 'fa-volume-low'}`}></i>
+                      </button>
+                      <button 
+                        onClick={() => copyToClipboard(m.text, msgId)}
+                        className={`transition-colors ${copiedId === msgId ? 'text-emerald-500' : 'text-slate-400 hover:text-blue-500'}`}
+                        title="Copy message"
+                      >
+                        <i className={`fa-solid ${copiedId === msgId ? 'fa-check' : 'fa-copy'}`}></i>
+                      </button>
+                    </div>
 
-                  <span className={`text-[10px] mt-2 block opacity-70 ${m.role === 'user' ? 'text-blue-100 text-right' : 'text-slate-400'}`}>
-                    {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                    <span className={`text-[10px] mt-2 block opacity-70 ${m.role === 'user' ? 'text-blue-100 text-right' : 'text-slate-400'}`}>
+                      {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-white border border-slate-200 p-4 rounded-2xl rounded-tl-none shadow-sm flex gap-1.5 items-center">
@@ -620,7 +708,7 @@ const App: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input - Comfortable and Spacious */}
+          {/* Chat Input */}
           <div className="p-4 md:p-6 bg-white border-t border-slate-200">
               <div className="flex gap-3 items-center max-w-4xl mx-auto">
                 <button 
@@ -636,7 +724,7 @@ const App: React.FC = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder={isListening ? "Listening..." : mode === 'triage' ? "Describe your symptoms (e.g. 'I have a headache and fatigue')..." : "Ask a platform question..."}
+                  placeholder={isListening ? "Listening..." : mode === 'triage' ? "Describe your symptoms..." : "Ask a platform question..."}
                   className={`flex-1 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm md:text-base focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:outline-none transition-all`}
                 />
                 
@@ -651,9 +739,9 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Results & Providers - flex-1 for secondary focal point */}
+        {/* Right Column: Results & Providers */}
         <aside className={`flex-1 md:max-w-sm flex flex-col gap-4 overflow-y-auto`}>
-           {/* Saved Providers Overlay View */}
+           {/* Saved Providers */}
            {showSaved && (
              <div className="bg-amber-50 rounded-xl border border-amber-200 shadow-sm p-4 mb-2 animate-in fade-in duration-200">
                 <div className="flex justify-between items-center mb-4">
@@ -671,6 +759,38 @@ const App: React.FC = () => {
                   ) : (
                     savedProviders.map((p, idx) => renderProviderCard(p, idx))
                   )}
+                </div>
+             </div>
+           )}
+
+           {/* Spread the Word Card (Support Mode only) */}
+           {mode === 'support' && !showSaved && (
+             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-5 text-white shadow-lg animate-in slide-in-from-right-2 duration-500 relative overflow-hidden group">
+                <i className="fa-solid fa-share-nodes absolute -right-2 -bottom-2 text-6xl opacity-10 rotate-12 transition-transform group-hover:scale-110"></i>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm border border-white/20">
+                    <i className="fa-solid fa-people-group text-white text-lg"></i>
+                  </div>
+                  <h3 className="font-bold text-sm uppercase tracking-wider">Spread the Word</h3>
+                </div>
+                <p className="text-xs opacity-95 mb-4 leading-relaxed">
+                  The more people who know about MyHealthCare-GH, the more lives we can impact. Share with friends and family!
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={handleShare}
+                    className="bg-white text-emerald-700 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-50 transition active:scale-95"
+                  >
+                    Share Now
+                  </button>
+                  <a 
+                    href={`https://wa.me/?text=${encodeURIComponent(shareText + " " + appLink)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-emerald-700/50 text-white border border-white/20 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-700/70 transition flex items-center justify-center gap-2"
+                  >
+                    <i className="fa-brands fa-whatsapp"></i> WhatsApp
+                  </a>
                 </div>
              </div>
            )}
@@ -699,17 +819,18 @@ const App: React.FC = () => {
                      <label className="text-[10px] uppercase font-bold text-slate-400 block mb-2 tracking-wider">Referral Summary</label>
                      <p className="text-xs text-slate-700 italic leading-relaxed">"{triageResult.summary}"</p>
                      <button 
-                       onClick={() => navigator.clipboard.writeText(triageResult.summary)}
-                       className="mt-3 w-full bg-white border border-slate-200 text-blue-600 py-2 rounded-lg text-xs font-bold hover:bg-blue-50 transition-all flex items-center justify-center gap-2 shadow-sm"
+                       onClick={() => copyToClipboard(triageResult.summary, 'triage-summary')}
+                       className={`mt-3 w-full border py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm ${copiedId === 'triage-summary' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-slate-200 text-blue-600 hover:bg-blue-50'}`}
                      >
-                       <i className="fa-regular fa-copy"></i> Copy to clipboard
+                       <i className={`fa-solid ${copiedId === 'triage-summary' ? 'fa-check' : 'fa-copy'}`}></i>
+                       {copiedId === 'triage-summary' ? 'Copied!' : 'Copy to clipboard'}
                      </button>
                   </div>
                 </div>
              </div>
            )}
 
-           {/* Value-Based Subscription/Donation Invitation */}
+           {/* Value-Based Support Invitation */}
            {triageResult && !isSubscribed && !showSaved && (
              <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-xl p-5 text-white shadow-xl animate-in zoom-in-95 duration-500 relative overflow-hidden group">
                 <i className="fa-solid fa-gem absolute -right-2 -bottom-2 text-6xl opacity-10 rotate-12 transition-transform group-hover:scale-110"></i>
@@ -721,7 +842,7 @@ const App: React.FC = () => {
                 </div>
                 
                 <p className="text-xs opacity-90 mb-4 leading-relaxed">
-                  We are a community-focused mission. Help keep this platform free for all Ghanaians by choosing a support level.
+                  We are a community-focused mission. Help keep this platform alive and free for all Ghanaians by choosing a support level.
                 </p>
 
                 {!showSubscriptionForm ? (
@@ -732,96 +853,129 @@ const App: React.FC = () => {
                     Subscribe or Donate
                   </button>
                 ) : (
-                  <form onSubmit={handleSubscribe} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 relative z-10">
-                    {/* Amount Selection Area */}
-                    <div className="space-y-2">
-                       <label className="text-[10px] uppercase font-bold text-white/70 block ml-1">Choose Amount (Ghc)</label>
-                       <div className="grid grid-cols-4 gap-2">
-                          <button 
-                            type="button" 
-                            onClick={() => setSelectedAmount(PREMIUM_PRICE)}
-                            className={`py-2 rounded-lg text-[10px] font-bold border transition ${selectedAmount === PREMIUM_PRICE ? 'bg-amber-400 text-slate-900 border-amber-400' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
-                          >
-                            25
-                          </button>
-                          {DONATION_PRESETS.map(amt => (
-                            <button 
-                              key={amt}
-                              type="button" 
-                              onClick={() => setSelectedAmount(amt)}
-                              className={`py-2 rounded-lg text-[10px] font-bold border transition ${selectedAmount === amt ? 'bg-amber-400 text-slate-900 border-amber-400' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
-                            >
-                              {amt}
-                            </button>
-                          ))}
-                       </div>
-                       <button 
-                         type="button"
-                         onClick={() => setSelectedAmount('other')}
-                         className={`w-full py-2 rounded-lg text-[10px] font-bold border transition ${selectedAmount === 'other' ? 'bg-amber-400 text-slate-900 border-amber-400' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
-                       >
-                         Other Amount
-                       </button>
-
-                       {selectedAmount === 'other' && (
-                         <div className="relative animate-in slide-in-from-top-1">
-                            <i className="fa-solid fa-money-bill-wave absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
-                            <input 
-                              required
-                              type="number"
-                              placeholder="Enter amount in Ghc"
-                              value={customAmount}
-                              onChange={(e) => setCustomAmount(e.target.value)}
-                              className="w-full bg-white text-slate-800 border-none rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-400 outline-none"
-                            />
-                         </div>
-                       )}
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 relative z-10">
+                    {/* Payment Method Selector */}
+                    <div className="flex bg-white/10 rounded-lg p-1 border border-white/10">
+                      <button 
+                        onClick={() => setPaymentMethod('momo')}
+                        className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-md transition-all ${paymentMethod === 'momo' ? 'bg-white text-blue-700' : 'text-white/60 hover:text-white'}`}
+                      >
+                        Mobile Money
+                      </button>
+                      <button 
+                        onClick={() => setPaymentMethod('bank')}
+                        className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-md transition-all ${paymentMethod === 'bank' ? 'bg-white text-blue-700' : 'text-white/60 hover:text-white'}`}
+                      >
+                        Bank Transfer
+                      </button>
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-white/10">
-                      <div className="relative">
-                        <i className="fa-solid fa-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
-                        <input 
-                          required
-                          type="text" 
-                          placeholder="Full Name" 
-                          value={subForm.fullName}
-                          onChange={(e) => setSubForm({...subForm, fullName: e.target.value})}
-                          className="w-full bg-white text-slate-800 border-none rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-400 outline-none"
-                        />
-                      </div>
-                      <div className="relative">
-                        <i className="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
-                        <input 
-                          required
-                          type="email" 
-                          placeholder="Email Address" 
-                          value={subForm.email}
-                          onChange={(e) => setSubForm({...subForm, email: e.target.value})}
-                          className="w-full bg-white text-slate-800 border-none rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-400 outline-none"
-                        />
-                      </div>
-                      <div className="relative">
-                        <i className="fa-solid fa-mobile-screen absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
-                        <input 
-                          required
-                          type="tel" 
-                          placeholder="MoMo Number" 
-                          value={subForm.momoNumber}
-                          onChange={(e) => setSubForm({...subForm, momoNumber: e.target.value})}
-                          className="w-full bg-white text-slate-800 border-none rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-400 outline-none"
-                        />
-                      </div>
-                    </div>
+                    {paymentMethod === 'momo' ? (
+                      <form onSubmit={handleSubscribe} className="space-y-4">
+                        <div className="space-y-2">
+                           <label className="text-[10px] uppercase font-bold text-white/70 block ml-1">Choose Amount (Ghc)</label>
+                           <div className="grid grid-cols-4 gap-2">
+                              {[25, 100, 200, 400].map(amt => (
+                                <button 
+                                  key={amt}
+                                  type="button" 
+                                  onClick={() => setSelectedAmount(amt)}
+                                  className={`py-2 rounded-lg text-[10px] font-bold border transition ${selectedAmount === amt ? 'bg-amber-400 text-slate-900 border-amber-400' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
+                                >
+                                  {amt}
+                                </button>
+                              ))}
+                           </div>
+                           <button 
+                             type="button"
+                             onClick={() => setSelectedAmount('other')}
+                             className={`w-full py-2 rounded-lg text-[10px] font-bold border transition ${selectedAmount === 'other' ? 'bg-amber-400 text-slate-900 border-amber-400' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
+                           >
+                             Other Amount
+                           </button>
 
-                    <button 
-                      type="submit"
-                      disabled={isSubscribing || (selectedAmount === 'other' && !customAmount)}
-                      className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-3 rounded-lg text-xs transition shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {isSubscribing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-bolt"></i>}
-                      {isSubscribing ? 'Processing...' : `Pay Ghc${totalAmount} via MoMo`}
-                    </button>
+                           {selectedAmount === 'other' && (
+                             <div className="relative animate-in slide-in-from-top-1">
+                                <i className="fa-solid fa-money-bill-wave absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+                                <input 
+                                  required
+                                  type="number"
+                                  placeholder="Enter amount in Ghc"
+                                  value={customAmount}
+                                  onChange={(e) => setCustomAmount(e.target.value)}
+                                  className="w-full bg-white text-slate-800 border-none rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-400 outline-none"
+                                />
+                             </div>
+                           )}
+                        </div>
+
+                        <div className="space-y-2 pt-2 border-t border-white/10">
+                          <input 
+                            required
+                            type="text" 
+                            placeholder="Full Name" 
+                            value={subForm.fullName}
+                            onChange={(e) => setSubForm({...subForm, fullName: e.target.value})}
+                            className="w-full bg-white text-slate-800 border-none rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-400 outline-none"
+                          />
+                          <input 
+                            required
+                            type="tel" 
+                            placeholder="MoMo Number" 
+                            value={subForm.momoNumber}
+                            onChange={(e) => setSubForm({...subForm, momoNumber: e.target.value})}
+                            className="w-full bg-white text-slate-800 border-none rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-400 outline-none"
+                          />
+                        </div>
+
+                        <button 
+                          type="submit"
+                          disabled={isSubscribing || (selectedAmount === 'other' && !customAmount)}
+                          className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-3 rounded-lg text-xs transition shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {isSubscribing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-bolt"></i>}
+                          {isSubscribing ? 'Processing...' : `Pay Ghc${totalAmount} via MoMo`}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="space-y-3 p-4 bg-white/5 rounded-xl border border-white/10 animate-in fade-in duration-300">
+                        <div className="flex justify-between items-start border-b border-white/10 pb-2 mb-2">
+                           <div className="flex flex-col">
+                              <span className="text-[9px] uppercase font-bold text-white/50">Bank Account Name</span>
+                              <span className="text-xs font-bold">{BANK_DETAILS.name}</span>
+                           </div>
+                           <i className="fa-solid fa-building-columns text-white/30"></i>
+                        </div>
+                        <div className="flex justify-between items-center">
+                           <div className="flex flex-col">
+                              <span className="text-[9px] uppercase font-bold text-white/50">Account Number</span>
+                              <span className="text-sm font-black tracking-widest">{BANK_DETAILS.account}</span>
+                           </div>
+                           <button 
+                             onClick={() => copyToClipboard(BANK_DETAILS.account, 'bank-acc')}
+                             className={`p-2 rounded-lg transition ${copiedId === 'bank-acc' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                           >
+                             <i className={`fa-solid ${copiedId === 'bank-acc' ? 'fa-check' : 'fa-copy'}`}></i>
+                           </button>
+                        </div>
+                        <div className="flex justify-between items-center">
+                           <div className="flex flex-col">
+                              <span className="text-[9px] uppercase font-bold text-white/50">Routing Number</span>
+                              <span className="text-xs font-bold">{BANK_DETAILS.routing}</span>
+                           </div>
+                           <button 
+                             onClick={() => copyToClipboard(BANK_DETAILS.routing, 'bank-route')}
+                             className={`p-2 rounded-lg transition ${copiedId === 'bank-route' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                           >
+                             <i className={`fa-solid ${copiedId === 'bank-route' ? 'fa-check' : 'fa-copy'}`}></i>
+                           </button>
+                        </div>
+                        <p className="text-[9px] text-white/40 italic text-center mt-2 leading-tight">
+                           Please use your Full Name as reference for bank transfers.
+                        </p>
+                      </div>
+                    )}
+                    
                     <button 
                       type="button"
                       onClick={() => setShowSubscriptionForm(false)}
@@ -829,7 +983,7 @@ const App: React.FC = () => {
                     >
                       Maybe Later
                     </button>
-                  </form>
+                  </div>
                 )}
              </div>
            )}
